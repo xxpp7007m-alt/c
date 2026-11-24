@@ -7,17 +7,71 @@ import streamlit as st
 DATA_FILE = Path("wound_care_data.json")
 
 st.set_page_config(
-    page_title="نظام متابعة الجروح والمرضى - نموذج Streamlit",
+    page_title="ترتيب العناية بالجروح والمرضى",
     page_icon="🩺",
     layout="wide",
 )
 
-# دعم الاتجاه من اليمين إلى اليسار (RTL) للواجهة العربية
+# تنسيق بصري مستوحى من الألوان الخضراء والبطاقات في الصورة المرفقة
 st.markdown(
     """
     <style>
-        .stApp { direction: rtl; text-align: right; }
-        .stMetric { text-align: right; }
+        .stApp {
+            direction: rtl;
+            text-align: right;
+            background-color: #f4f7f5;
+        }
+        .hero-card {
+            background: linear-gradient(135deg, #1b5e3a 0%, #27794d 100%);
+            color: #ffffff;
+            padding: 22px 26px;
+            border-radius: 18px;
+            margin-bottom: 18px;
+            box-shadow: 0 6px 18px rgba(27, 94, 58, 0.14);
+        }
+        .hero-sub {
+            color: #d9efe2;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .hero-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .task-card {
+            background-color: #ffffff;
+            border: 1px solid #e2ebe5;
+            border-right: 5px solid #27794d;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+        .badge-green {
+            display: inline-block;
+            background-color: #e6f4ec;
+            color: #1b5e3a;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .badge-alert {
+            display: inline-block;
+            background-color: #fdecea;
+            color: #b42318;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        div[data-testid="stMetric"] {
+            background-color: #ffffff;
+            border: 1px solid #e2ebe5;
+            border-radius: 14px;
+            padding: 12px 16px;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -106,35 +160,30 @@ if "db" not in st.session_state:
 
 db = st.session_state.db
 
-st.title("🩺 لوحة متابعة الجروح والمرضى (نموذج أولي بلغة Python)")
-st.caption("نموذج تجريبي مبني بـ Streamlit لحفظ البيانات محلياً في ملف JSON")
-
-# الشريط الجانبي: اختيار المريض وإضافة مريض جديد
+# الشريط الجانبي: قائمة المرضى وإضافة مريض جديد
 with st.sidebar:
-    st.header("إدارة المرضى")
+    st.markdown("### 🌿 قائمة المرضى")
     patient_labels = {
         f"{p['name']} ({p['id']})": p["id"] for p in db["patients"]
     }
 
     selected_patient_id = None
     if patient_labels:
-        selected_label = st.selectbox("اختر مريضاً", list(patient_labels.keys()))
+        selected_label = st.selectbox("اختر المريض", list(patient_labels.keys()))
         selected_patient_id = patient_labels[selected_label]
     else:
         st.info("لا يوجد مرضى مسجلون حالياً.")
 
     st.divider()
-    st.subheader("➕ إضافة مريض جديد")
+    st.markdown("### ➕ إضافة مريض جديد")
     with st.form("add_patient_form", clear_on_submit=True):
-        p_id = st.text_input("رقم الملف / المعرف", placeholder="مثال: PT-102")
+        p_id = st.text_input("رقم الملف", placeholder="مثال: PT-102")
         p_name = st.text_input("اسم المريض")
         p_room = st.text_input("الغرفة / القسم", placeholder="مثال: جناح ب - 204")
         p_interval = st.number_input(
-            "فترة التقليب (بالساعات)", min_value=1, max_value=12, value=2
+            "فترة التقليب (ساعات)", min_value=1, max_value=12, value=2
         )
-        submitted_patient = st.form_submit_button("حفظ المريض")
-
-        if submitted_patient:
+        if st.form_submit_button("حفظ المريض"):
             if p_id.strip() and p_name.strip():
                 if any(p["id"] == p_id.strip() for p in db["patients"]):
                     st.error("رقم الملف موجود مسبقاً.")
@@ -150,13 +199,12 @@ with st.sidebar:
                         }
                     )
                     save_data(db)
-                    st.success("تمت إضافة المريض بنجاح.")
+                    st.success("تمت إضافة المريض.")
                     st.rerun()
             else:
-                st.warning("يرجى إدخال رقم الملف واسم المريض.")
+                st.warning("أدخل رقم الملف واسم المريض.")
 
     st.divider()
-    st.subheader("إدارة البيانات")
     st.download_button(
         label="⬇️ تصدير البيانات (JSON)",
         data=json.dumps(db, ensure_ascii=False, indent=2),
@@ -169,35 +217,42 @@ if not selected_patient_id:
 
 patient = next(p for p in db["patients"] if p["id"] == selected_patient_id)
 
-# القسم العلوي: مؤقت التقليب (Turning Clock)
-st.subheader(f"بيانات المريض: {patient['name']} — {patient['room']}")
+# ترويسة خضراء مستوحاة من التصميم المرفق
+now_str = datetime.now().strftime("%Y-%m-%d — %H:%M")
+st.markdown(
+    f"""
+    <div class="hero-card">
+        <div class="hero-sub">متابعة العناية بالجروح والمرضى • {now_str}</div>
+        <div class="hero-title">{patient['name']} — {patient['room']}</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
+# مؤقت التقليب والمؤشرات السريعة
 last_turned = datetime.fromisoformat(patient["last_turned_at"])
 interval = timedelta(hours=patient.get("turning_interval_hours", 2))
 next_turn = last_turned + interval
 remaining = next_turn - datetime.now()
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("فترة التقليب المحددة", f"كل {patient.get('turning_interval_hours', 2)} ساعات")
-col2.metric("آخر تقليب", last_turned.strftime("%Y-%m-%d %H:%M"))
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("فترة التقليب", f"كل {patient.get('turning_interval_hours', 2)} ساعات")
+c2.metric("آخر تقليب", last_turned.strftime("%H:%M"))
 
 if remaining.total_seconds() <= 0:
     overdue_mins = int(abs(remaining.total_seconds()) // 60)
-    col3.metric("حالة التقليب", "متأخر عن الموعد", delta=f"-{overdue_mins} دقيقة", delta_color="inverse")
+    c3.metric("حالة التقليب", "متأخر عن الموعد", delta=f"-{overdue_mins} د", delta_color="inverse")
 else:
     rem_mins = int(remaining.total_seconds() // 60)
-    col3.metric("الوقت المتبقي للتقليب", f"{rem_mins // 60} س و {rem_mins % 60} د")
+    c3.metric("الوقت المتبقي", f"{rem_mins // 60} س و {rem_mins % 60} د")
 
-col4.metric("عدد الجروح المسجلة", len(patient["wounds"]))
-
-if col4.button("✅ تسجيل إتمام التقليب الآن"):
+c4.metric("عدد الجروح", len(patient["wounds"]))
+if c4.button("✅ تسجيل إتمام التقليب الآن"):
     patient["last_turned_at"] = datetime.now().isoformat()
     save_data(db)
     st.rerun()
 
-st.divider()
-
-# إضافة جرح جديد للمريض
+# إضافة جرح جديد
 with st.expander("➕ إضافة جرح جديد للمريض"):
     with st.form("add_wound_form", clear_on_submit=True):
         w_location = st.text_input("موقع الجرح", placeholder="مثال: الكعب الأيمن")
@@ -205,13 +260,11 @@ with st.expander("➕ إضافة جرح جديد للمريض"):
             "نوع الجرح",
             ["قرحة ضغط", "جرح جراحي", "قرحة وعائية / سكري", "رض أو سحجة", "أخرى"],
         )
-        init_length = st.number_input("الطول الأولي (سم)", min_value=0.1, value=2.5, step=0.1)
-        init_width = st.number_input("العرض الأولي (سم)", min_value=0.1, value=2.0, step=0.1)
-        init_depth = st.number_input("العمق الأولي (سم)", min_value=0.0, value=0.5, step=0.1)
+        init_length = st.number_input("الطول (سم)", min_value=0.1, value=2.5, step=0.1)
+        init_width = st.number_input("العرض (سم)", min_value=0.1, value=2.0, step=0.1)
+        init_depth = st.number_input("العمق (سم)", min_value=0.0, value=0.5, step=0.1)
         init_notes = st.text_area("ملاحظات أولية")
-        submitted_wound = st.form_submit_button("إضافة الجرح")
-
-        if submitted_wound and w_location.strip():
+        if st.form_submit_button("إضافة الجرح") and w_location.strip():
             wound_id = f"W-{len(patient['wounds']) + 1}"
             today_str = datetime.now().date().isoformat()
             patient["wounds"].append(
@@ -255,12 +308,11 @@ selected_wound_id = wound_options[selected_wound_label]
 wound = next(w for w in patient["wounds"] if w["id"] == selected_wound_id)
 
 tab1, tab2, tab3 = st.tabs(
-    ["📏 التقييم ومنحنى المساحة", "🩺 سجل الإجراءات والغيارات", "📝 إضافة تقييم أو إجراء"]
+    ["📋 التقييم ومنحنى المساحة", "🩺 سجل الإجراءات", "📝 إضافة تقييم أو إجراء"]
 )
 
 with tab1:
-    assessments = wound["assessments"]
-    df = pd.DataFrame(assessments)
+    df = pd.DataFrame(wound["assessments"])
     df["area_cm2"] = (df["length_cm"] * df["width_cm"]).round(2)
 
     latest = df.iloc[-1]
@@ -268,37 +320,54 @@ with tab1:
     area_change = round(float(latest["area_cm2"]) - float(first["area_cm2"]), 2)
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("المساحة الحالية (سم²)", f"{latest['area_cm2']} سم²")
+    m1.metric("المساحة الحالية", f"{latest['area_cm2']} سم²")
     m2.metric("التغير الكلي في المساحة", f"{area_change} سم²", delta=f"{area_change} سم²")
     m3.metric("الإفرازات الأخيرة", latest["exudate"])
 
     st.markdown("#### منحنى تطور مساحة الجرح (سم²)")
-    chart_df = df.set_index("date")[["area_cm2"]]
-    st.line_chart(chart_df)
+    st.line_chart(df.set_index("date")[["area_cm2"]])
 
-    st.dataframe(
-        df[["date", "length_cm", "width_cm", "depth_cm", "area_cm2", "exudate", "notes"]],
-        use_container_width=True,
-    )
+    st.markdown("#### بطاقات التقييمات السابقة")
+    for row in reversed(df.to_dict(orient="records")):
+        st.markdown(
+            f"""
+            <div class="task-card">
+                <span class="badge-green">{row['date']}</span>
+                <strong> — المساحة: {row['area_cm2']} سم²</strong>
+                <div>الطول: {row['length_cm']} سم | العرض: {row['width_cm']} سم | العمق: {row['depth_cm']} سم | الإفرازات: {row['exudate']}</div>
+                <div style="color:#55625a; margin-top:4px;">{row.get('notes') or 'بدون ملاحظات إضافية'}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 with tab2:
     if wound["procedures"]:
-        st.table(pd.DataFrame(wound["procedures"]))
+        for proc in reversed(wound["procedures"]):
+            st.markdown(
+                f"""
+                <div class="task-card">
+                    <span class="badge-green">{proc['date']}</span>
+                    <strong> — {proc['procedure']}</strong>
+                    <div style="color:#55625a; margin-top:4px;">القائم بالإجراء: {proc['performed_by']}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     else:
         st.info("لا توجد إجراءات مسجلة لهذا الجرح.")
 
 with tab3:
     c_left, c_right = st.columns(2)
-
     with c_left:
-        st.markdown("#### تسجيل تقييم جديد للجرح")
+        st.markdown("#### تسجيل تقييم جديد")
         with st.form("add_assessment_form", clear_on_submit=True):
-            a_date = st.date_input("تاريخ التقييم", value=datetime.now().date())
+            a_date = st.date_input("التاريخ", value=datetime.now().date())
             a_len = st.number_input("الطول (سم)", min_value=0.0, value=float(latest["length_cm"]), step=0.1)
             a_wid = st.number_input("العرض (سم)", min_value=0.0, value=float(latest["width_cm"]), step=0.1)
             a_dep = st.number_input("العمق (سم)", min_value=0.0, value=float(latest["depth_cm"]), step=0.1)
             a_exu = st.selectbox("الإفرازات", ["لا يوجد", "خفيف جداً", "خفيف", "متوسط", "غزير"])
-            a_notes = st.text_area("ملاحظات التقييم")
+            a_notes = st.text_area("ملاحظات")
             if st.form_submit_button("حفظ التقييم"):
                 wound["assessments"].append(
                     {
@@ -315,10 +384,10 @@ with tab3:
                 st.rerun()
 
     with c_right:
-        st.markdown("#### تسجيل إجراء أو تغيير غيار")
+        st.markdown("#### تسجيل إجراء أو غيار")
         with st.form("add_procedure_form", clear_on_submit=True):
-            pr_date = st.date_input("تاريخ الإجراء", value=datetime.now().date())
-            pr_name = st.text_input("نوع الإجراء", placeholder="مثال: غيار رغوي أو تنظيف محلول ملحي")
+            pr_date = st.date_input("التاريخ", value=datetime.now().date(), key="proc_date")
+            pr_name = st.text_input("نوع الإجراء", placeholder="مثال: تنظيف وتغيير غيار")
             pr_by = st.text_input("القائم بالإجراء", placeholder="مثال: ممرض/ة القسم")
             if st.form_submit_button("حفظ الإجراء"):
                 if pr_name.strip():
@@ -333,4 +402,4 @@ with tab3:
                     st.success("تم تسجيل الإجراء.")
                     st.rerun()
                 else:
-                    st.warning("يرجى إدخال نوع الإجراء.")
+                    st.warning("أدخل نوع الإجراء.")
