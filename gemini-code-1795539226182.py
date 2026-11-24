@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
 DATA_FILE = Path("wound_care_data.json")
@@ -273,15 +272,9 @@ with tab1:
     m2.metric("التغير الكلي في المساحة", f"{area_change} سم²", delta=f"{area_change} سم²")
     m3.metric("الإفرازات الأخيرة", latest["exudate"])
 
-    fig = px.line(
-        df,
-        x="date",
-        y="area_cm2",
-        markers=True,
-        title="منحنى تطور مساحة الجرح (سم²)",
-        labels={"date": "التاريخ", "area_cm2": "المساحة (سم²)"},
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("#### منحنى تطور مساحة الجرح (سم²)")
+    chart_df = df.set_index("date")[["area_cm2"]]
+    st.line_chart(chart_df)
 
     st.dataframe(
         df[["date", "length_cm", "width_cm", "depth_cm", "area_cm2", "exudate", "notes"]],
