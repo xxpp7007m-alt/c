@@ -1,17 +1,18 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-DATA_FILE = Path("hazards_data.json")
+DATA_FILE = Path("wound_care_data.json")
 
 st.set_page_config(
-    page_title="نظام إدارة المخاطر والبلاغات",
-    page_icon="🛡️",
+    page_title="ترتيب العناية بالجروح والمرضى",
+    page_icon="🩺",
     layout="wide",
 )
 
+# تنسيق بصري مستوحى من الألوان الخضراء والبطاقات
 st.markdown(
     """
     <style>
@@ -23,48 +24,31 @@ st.markdown(
         .hero-card {
             background: linear-gradient(135deg, #1b5e3a 0%, #27794d 100%);
             color: #ffffff;
-            padding: 20px 24px;
+            padding: 22px 26px;
             border-radius: 18px;
             margin-bottom: 18px;
             box-shadow: 0 6px 18px rgba(27, 94, 58, 0.14);
         }
         .hero-sub {
             color: #d9efe2;
-            font-size: 0.92rem;
+            font-size: 0.95rem;
             margin-bottom: 4px;
         }
         .hero-title {
-            font-size: 1.7rem;
+            font-size: 1.75rem;
             font-weight: 700;
             margin: 0;
         }
-        .hazard-card {
+        .task-card {
             background-color: #ffffff;
             border: 1px solid #e2ebe5;
             border-right: 5px solid #27794d;
             border-radius: 14px;
             padding: 14px 18px;
             margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
         }
-        .badge-high {
-            display: inline-block;
-            background-color: #fdecea;
-            color: #b42318;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-        .badge-med {
-            display: inline-block;
-            background-color: #fef6e7;
-            color: #b54708;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-        .badge-low {
+        .badge-green {
             display: inline-block;
             background-color: #e6f4ec;
             color: #1b5e3a;
@@ -85,50 +69,63 @@ st.markdown(
 )
 
 
-def risk_level(score: int) -> tuple[str, str]:
-    if score >= 15:
-        return "مرتفع جداً / عالٍ", "badge-high"
-    if score >= 8:
-        return "متوسط", "badge-med"
-    return "منخفض", "badge-low"
-
-
 def default_data() -> dict:
-    today = datetime.now().date().isoformat()
+    today = datetime.now().date()
     return {
-        "initiative_name": "مبادرة السلامة والجودة وتحسين العمليات",
-        "hazards": [
+        "patients": [
             {
-                "id": "HZ-101",
-                "title": "تأخر استلام المستلزمات التشغيلية",
-                "department": "العمليات والإمداد",
-                "likelihood": 4,
-                "severity": 4,
-                "status": "قيد المعالجة",
-                "date": today,
-                "action_plan": "تحديث جدول الطلبات الوقائية وتحديد حد أدنى للمخزون.",
-            },
-            {
-                "id": "HZ-102",
-                "title": "نقص توثيق الإجراءات اليومية في الوقت الفعلي",
-                "department": "الجودة والمتابعة",
-                "likelihood": 3,
-                "severity": 3,
-                "status": "مفتوح",
-                "date": today,
-                "action_plan": "تفعيل نموذج تسجيل سريع في نهاية كل وردية.",
-            },
-            {
-                "id": "HZ-103",
-                "title": "انقطاع مؤقت للاتصال بالشبكة المحلية",
-                "department": "تقنية المعلومات",
-                "likelihood": 2,
-                "severity": 3,
-                "status": "مغلق",
-                "date": today,
-                "action_plan": "تفعيل الحفظ المحلي التلقائي ومزامنة البيانات عند عودة الاتصال.",
-            },
-        ],
+                "id": "PT-101",
+                "name": "مريض تجريبي 1",
+                "room": "جناح أ - 102",
+                "turning_interval_hours": 2,
+                "last_turned_at": (datetime.now() - timedelta(hours=1, minutes=30)).isoformat(),
+                "wounds": [
+                    {
+                        "id": "W-1",
+                        "location": "أسفل الظهر (العصعص)",
+                        "wound_type": "قرحة ضغط",
+                        "assessments": [
+                            {
+                                "date": (today - timedelta(days=10)).isoformat(),
+                                "length_cm": 5.0,
+                                "width_cm": 4.0,
+                                "depth_cm": 1.2,
+                                "exudate": "متوسط",
+                                "notes": "بداية المتابعة السريرية",
+                            },
+                            {
+                                "date": (today - timedelta(days=5)).isoformat(),
+                                "length_cm": 4.2,
+                                "width_cm": 3.5,
+                                "depth_cm": 0.9,
+                                "exudate": "خفيف",
+                                "notes": "تحسن في حواف الجرح",
+                            },
+                            {
+                                "date": today.isoformat(),
+                                "length_cm": 3.4,
+                                "width_cm": 3.0,
+                                "depth_cm": 0.6,
+                                "exudate": "خفيف جداً",
+                                "notes": "استجابة جيدة للعناية والغيارات",
+                            },
+                        ],
+                        "procedures": [
+                            {
+                                "date": (today - timedelta(days=5)).isoformat(),
+                                "procedure": "تنظيف الجرح وتغيير الغيار الطبي",
+                                "performed_by": "فريق التمريض",
+                            },
+                            {
+                                "date": today.isoformat(),
+                                "procedure": "تقييم الجرح وتحديث قياسات المساحة",
+                                "performed_by": "فريق التمريض",
+                            },
+                        ],
+                    }
+                ],
+            }
+        ]
     }
 
 
@@ -149,159 +146,109 @@ def save_data(data: dict) -> None:
     )
 
 
-if "risk_db" not in st.session_state:
-    st.session_state.risk_db = load_data()
+if "db" not in st.session_state:
+    st.session_state.db = load_data()
 
-db = st.session_state.risk_db
-hazards = db["hazards"]
+db = st.session_state.db
 
+# الشريط الجانبي: قائمة المرضى وإضافة مريض جديد وإدارة البيانات
 with st.sidebar:
-    st.markdown("### 🛡️ قائمة التنقل")
-    page = st.radio(
-        "اختر القسم",
-        [
-            "لوحة المعلومات",
-            "إضافة خطر جديد",
-            "سجل المخاطر",
-            "مصفوفة المخاطر",
-            "تقرير المبادرة",
-        ],
-    )
+    st.markdown("### 🌿 قائمة المرضى")
+    patient_labels = {
+        f"{p['name']} ({p['id']})": p["id"] for p in db["patients"]
+    }
+
+    selected_patient_id = None
+    if patient_labels:
+        selected_label = st.selectbox("اختر المريض", list(patient_labels.keys()))
+        selected_patient_id = patient_labels[selected_label]
+    else:
+        st.info("لا يوجد مرضى مسجلون حالياً.")
+
     st.divider()
+    st.markdown("### ➕ إضافة مريض جديد")
+    with st.form("add_patient_form", clear_on_submit=True):
+        p_id = st.text_input("رقم الملف", placeholder="مثال: PT-102")
+        p_name = st.text_input("اسم المريض")
+        p_room = st.text_input("الغرفة / القسم", placeholder="مثال: جناح ب - 204")
+        p_interval = st.number_input(
+            "فترة التقليب (ساعات)", min_value=1, max_value=12, value=2
+        )
+        if st.form_submit_button("حفظ المريض"):
+            if p_id.strip() and p_name.strip():
+                if any(p["id"] == p_id.strip() for p in db["patients"]):
+                    st.error("رقم الملف موجود مسبقاً.")
+                else:
+                    db["patients"].append(
+                        {
+                            "id": p_id.strip(),
+                            "name": p_name.strip(),
+                            "room": p_room.strip() or "غير محدد",
+                            "turning_interval_hours": int(p_interval),
+                            "last_turned_at": datetime.now().isoformat(),
+                            "wounds": [],
+                        }
+                    )
+                    save_data(db)
+                    st.success("تمت إضافة المريض.")
+                    st.rerun()
+            else:
+                st.warning("أدخل رقم الملف واسم المريض.")
+
+    st.divider()
+    st.markdown("### إدارة البيانات")
     st.download_button(
-        label="⬇️ تصدير السجل (JSON)",
+        label="⬇️ تصدير البيانات (JSON)",
         data=json.dumps(db, ensure_ascii=False, indent=2),
-        file_name="hazards_export.json",
+        file_name="wound_care_export.json",
         mime="application/json",
     )
 
+    if st.button("🗑️ حذف جميع البيانات", type="secondary"):
+        st.session_state.db = {"patients": []}
+        save_data(st.session_state.db)
+        st.success("تم حذف جميع البيانات.")
+        st.rerun()
+
+if not selected_patient_id:
+    st.info("القائمة فارغة حالياً. أضف مريضاً جديداً من الشريط الجانبي للبدء.")
+    st.stop()
+
+patient = next(p for p in db["patients"] if p["id"] == selected_patient_id)
+
+# ترويسة خضراء
+now_str = datetime.now().strftime("%Y-%m-%d — %H:%M")
 st.markdown(
     f"""
     <div class="hero-card">
-        <div class="hero-sub">{db.get("initiative_name", "إدارة المخاطر")} • {datetime.now().strftime("%Y-%m-%d")}</div>
-        <div class="hero-title">{page}</div>
+        <div class="hero-sub">متابعة العناية بالجروح والمرضى • {now_str}</div>
+        <div class="hero-title">{patient['name']} — {patient['room']}</div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-df = pd.DataFrame(hazards) if hazards else pd.DataFrame(
-    columns=["id", "title", "department", "likelihood", "severity", "status", "date", "action_plan"]
-)
-if not df.empty:
-    df["score"] = df["likelihood"] * df["severity"]
+# مؤقت التقليب والمؤشرات السريعة
+last_turned = datetime.fromisoformat(patient["last_turned_at"])
+interval = timedelta(hours=patient.get("turning_interval_hours", 2))
+next_turn = last_turned + interval
+remaining = next_turn - datetime.now()
 
-if page == "لوحة المعلومات":
-    total_h = len(df)
-    high_h = int((df["score"] >= 15).sum()) if not df.empty else 0
-    open_h = int((df["status"] != "مغلق").sum()) if not df.empty else 0
-    closed_h = int((df["status"] == "مغلق").sum()) if not df.empty else 0
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("فترة التقليب", f"كل {patient.get('turning_interval_hours', 2)} ساعات")
+c2.metric("آخر تقليب", last_turned.strftime("%H:%M"))
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("إجمالي المخاطر", total_h)
-    c2.metric("مخاطر عالية (≥ 15)", high_h)
-    c3.metric("قيد المتابعة / مفتوح", open_h)
-    c4.metric("مغلقة / معالجة", closed_h)
+if remaining.total_seconds() <= 0:
+    overdue_mins = int(abs(remaining.total_seconds()) // 60)
+    c3.metric("حالة التقليب", "متأخر عن الموعد", delta=f"-{overdue_mins} د", delta_color="inverse")
+else:
+    rem_mins = int(remaining.total_seconds() // 60)
+    c3.metric("الوقت المتبقي", f"{rem_mins // 60} س و {rem_mins % 60} د")
 
-    st.markdown("#### أبرز البلاغات والمخاطر المسجلة")
-    for item in reversed(hazards):
-        sc = item["likelihood"] * item["severity"]
-        lvl, badge_cls = risk_level(sc)
-        st.markdown(
-            f"""
-            <div class="hazard-card">
-                <span class="{badge_cls}">{lvl} ({sc}/25)</span>
-                <strong> — {item['title']}</strong>
-                <div style="color:#55625a; margin-top:4px;">
-                    القسم: {item['department']} | الحالة: {item['status']} | التاريخ: {item['date']}
-                </div>
-                <div style="margin-top:6px;">الإجراء المقترح: {item.get('action_plan') or 'لا يوجد'}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+c4.metric("عدد الجروح", len(patient["wounds"]))
+if c4.button("✅ تسجيل إتمام التقليب الآن"):
+    patient["last_turned_at"] = datetime.now().isoformat()
+    save_data(db)
+    st.rerun()
 
-elif page == "إضافة خطر جديد":
-    with st.form("add_hazard_form", clear_on_submit=True):
-        h_id = st.text_input("رمز الخطر", value=f"HZ-{101 + len(hazards)}")
-        h_title = st.text_input("وصف الخطر أو البلاغ", placeholder="مثال: تأخر اعتماد النماذج")
-        h_dept = st.text_input("القسم / الوحدة", placeholder="مثال: الإدارة / العمليات")
-        col_l, col_s = st.columns(2)
-        h_like = col_l.slider("الاحتمالية (1 - 5)", min_value=1, max_value=5, value=3)
-        h_sev = col_s.slider("الأثر / الخطورة (1 - 5)", min_value=1, max_value=5, value=3)
-        h_status = st.selectbox("الحالة", ["مفتوح", "قيد المعالجة", "مغلق"])
-        h_action = st.text_area("خطة العمل أو الإجراء الوقائي")
-
-        if st.form_submit_button("حفظ الخطر"):
-            if h_title.strip():
-                hazards.append(
-                    {
-                        "id": h_id.strip() or f"HZ-{len(hazards) + 1}",
-                        "title": h_title.strip(),
-                        "department": h_dept.strip() or "عام",
-                        "likelihood": int(h_like),
-                        "severity": int(h_sev),
-                        "status": h_status,
-                        "date": datetime.now().date().isoformat(),
-                        "action_plan": h_action.strip(),
-                    }
-                )
-                save_data(db)
-                st.success("تم حفظ الخطر بنجاح.")
-                st.rerun()
-            else:
-                st.warning("يرجى إدخال وصف الخطر.")
-
-elif page == "سجل المخاطر":
-    if df.empty:
-        st.info("لا توجد مخاطر مسجلة.")
-    else:
-        status_filter = st.selectbox("تصفية حسب الحالة", ["الكل", "مفتوح", "قيد المعالجة", "مغلق"])
-        view_df = df if status_filter == "الكل" else df[df["status"] == status_filter]
-        st.dataframe(view_df, use_container_width=True)
-
-        st.markdown("#### تحديث حالة خطر")
-        selected_id = st.selectbox("اختر رمز الخطر", [h["id"] for h in hazards])
-        new_status = st.selectbox("الحالة الجديدة", ["مفتوح", "قيد المعالجة", "مغلق"])
-        if st.button("تحديث الحالة"):
-            for h in hazards:
-                if h["id"] == selected_id:
-                    h["status"] = new_status
-                    break
-            save_data(db)
-            st.success("تم تحديث الحالة.")
-            st.rerun()
-
-elif page == "مصفوفة المخاطر":
-    st.caption("الدرجة = الاحتمالية × الخطورة (من 1 إلى 25)")
-    matrix_rows = []
-    for s in range(5, 0, -1):
-        row = {"الخطورة \\ الاحتمالية": f"خطورة {s}"}
-        for l in range(1, 6):
-            row[f"احتمال {l}"] = s * l
-        matrix_rows.append(row)
-    matrix_df = pd.DataFrame(matrix_rows).set_index("الخطورة \\ الاحتمالية")
-    st.dataframe(matrix_df, use_container_width=True)
-
-    if not df.empty:
-        st.markdown("#### توزيع المخاطر المسجلة")
-        st.bar_chart(df.set_index("id")[["score"]])
-
-elif page == "تقرير المبادرة":
-    new_init = st.text_input("اسم المبادرة", value=db.get("initiative_name", ""))
-    if st.button("حفظ اسم المبادرة"):
-        db["initiative_name"] = new_init.strip() or "مبادرة الجودة والسلامة"
-        save_data(db)
-        st.success("تم تحديث اسم المبادرة.")
-        st.rerun()
-
-    st.divider()
-    total_h = len(df)
-    closed_h = int((df["status"] == "مغلق").sum()) if not df.empty else 0
-    rate = round((closed_h / total_h) * 100, 1) if total_h else 0.0
-    st.metric("نسبة إغلاق المخاطر المسجلة", f"{rate}%", delta=f"{closed_h} من {total_h}")
-    if not df.empty:
-        st.dataframe(
-            df[["id", "title", "department", "score", "status", "action_plan"]],
-            use_container_width=True,
-        )
+# إضافة جرح جديد
